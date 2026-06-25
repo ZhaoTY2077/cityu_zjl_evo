@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 *)",
+      "Bash(awk '{gsub\\(/\\\\r/,\"\"\\); print}' /saturn/zhaoty/evo_project/files/RBP_geneid_list.txt)",
+      "Bash(awk '{gsub\\(/\\\\r/,\"\"\\); print NR\": \"$0}' /saturn/zhaoty/evo_project/files/RBP_geneid_list.txt)",
+      "Bash(Rscript *)"
+    ]
+  }
+}
