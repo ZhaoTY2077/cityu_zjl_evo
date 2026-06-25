@@ -1,0 +1,51 @@
+# =====================
+# Raw data (原始数据)
+# =====================
+data/raw/
+
+# =====================
+# Intermediate pipeline data (中间结果)
+# =====================
+data/intermediate/
+data/paired_sequences/
+data/alignments/
+data/tmp_codeml/
+data/sitewise_conservation/
+results/evolutionary/tables/
+results/evolutionary/report/
+
+# R binary intermediate files
+*.RData
+*.Rda
+*.Rds
+
+# =====================
+# Python
+# =====================
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# =====================
+# R
+# =====================
+.Rhistory
+.Rproj.user/
+.Renviron
+
+# =====================
+# System
+# =====================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# =====================
+# External tools (installed during setup)
+# =====================
+code/evolutionary/bin/
