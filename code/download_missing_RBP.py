@@ -12,11 +12,11 @@ import re
 import json
 
 # --- Config ---
-ENSG_FILE = "./files/RBP_geneid_list.txt"
-EXISTING_CDNA = "./files/human_RBP_cdna.fasta"
-EXISTING_PROTEIN = "./files/human_RBP_protein.fasta"
-OUTPUT_LOG = "./files/RBP_download_log.txt"
-CHECKPOINT_FILE = "./files/download_checkpoint.json"
+ENSG_FILE = "./data/raw/RBP_geneid_list.txt"
+EXISTING_CDNA = "./data/raw/human_RBP_cdna.fasta"
+EXISTING_PROTEIN = "./data/raw/human_RBP_protein.fasta"
+OUTPUT_LOG = "./data/raw/RBP_download_log.txt"
+CHECKPOINT_FILE = "./data/raw/download_checkpoint.json"
 
 BATCH_SIZE = 25  # Smaller batches for reliability
 MAX_RETRIES = 3

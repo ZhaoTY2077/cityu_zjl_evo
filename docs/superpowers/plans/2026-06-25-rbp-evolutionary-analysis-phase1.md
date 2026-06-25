@@ -22,10 +22,10 @@
 ### Task 0: 环境准备和目录初始化
 
 **Files:**
-- Create: `evolutionary_analysis/config.yaml`
-- Create: `evolutionary_analysis/data/` (及子目录)
-- Create: `evolutionary_analysis/figures/`
-- Create: `evolutionary_analysis/report/`
+- Create: `code/evolutionary/config.yaml`
+- Create: `data/` (及子目录)
+- Create: `results/evolutionary/figures/`
+- Create: `results/evolutionary/report/`
 - None: 安装依赖
 
 **Interfaces:**
@@ -44,7 +44,7 @@ Rscript -e 'if (!require("BiocManager", quietly=TRUE)) install.packages("BiocMan
 # 外部工具 (conda)
 conda install -c bioconda mafft paml
 # pal2nal 是一个 Perl 脚本，直接下载
-cd /saturn/zhaoty/evo_project/evolutionary_analysis
+cd /saturn/zhaoty/evo_project/code/evolutionary
 wget https://raw.githubusercontent.com/malek-lab/pal2nal/master/pal2nal.pl -O bin/pal2nal.pl
 chmod +x bin/pal2nal.pl
 ```
@@ -53,7 +53,8 @@ chmod +x bin/pal2nal.pl
 
 ```bash
 cd /saturn/zhaoty/evo_project
-mkdir -p evolutionary_analysis/{python,r,data/{paired_sequences,alignments/{protein,cdna},results,sitewise_conservation},figures,report,bin}
+mkdir -p code/evolutionary/{python,r,bin} data/raw results/evolutionary/{figures,report,tables}
+# 注: 旧结构 evolutionary_analysis/ 已重构为 code/evolutionary/ + data/raw/ + results/evolutionary/
 ```
 
 - [ ] **Step 3: 创建 config.yaml**
@@ -61,18 +62,18 @@ mkdir -p evolutionary_analysis/{python,r,data/{paired_sequences,alignments/{prot
 ```yaml
 project:
   name: "RBP_evolutionary_analysis"
-  root: "/saturn/zhaoty/evo_project/evolutionary_analysis"
+  root: "/saturn/zhaoty/evo_project"
 
 species:
   reference: "human"
-  ref_cdna: "../files/human_RBP_cdna.fasta"
-  ref_protein: "../files/human_RBP_protein.fasta"
+  ref_cdna: "data/raw/human_RBP_cdna.fasta"
+  ref_protein: "data/raw/human_RBP_protein.fasta"
   targets:
     - code: "ptr"
       name: "Pan troglodytes"
-      cdna: "../files/pan_troglodytes_RBP_cdna.fasta"
-      protein: "../files/pan_troglodytes_RBP_protein.fasta"
-      ortholog_map: "../files/chimp_ortholog_mapping.txt"
+      cdna: "data/raw/pan_troglodytes_RBP_cdna.fasta"
+      protein: "data/raw/pan_troglodytes_RBP_protein.fasta"
+      ortholog_map: "data/raw/chimp_ortholog_mapping.txt"
       ortholog_sep: "\t"          # 同源映射表分隔符
 
 alignment:
@@ -102,7 +103,7 @@ mafft --version
 codeml 2>&1 | head -3
 python3 -c "import Bio; print('Biopython', Bio.__version__)"
 Rscript -e 'library(ggplot2); library(clusterProfiler); cat("R packages ok\n")'
-git add evolutionary_analysis/
+git add code/evolutionary/
 git commit -m "feat: init evolutionary analysis directory structure and config"
 ```
 
@@ -111,7 +112,7 @@ git commit -m "feat: init evolutionary analysis directory structure and config"
 ### Task 1: 下载 Ensembl 转录本↔基因映射表
 
 **Files:**
-- Create: `evolutionary_analysis/python/download_enst_mapping.py`
+- Create: `code/evolutionary/python/download_enst_mapping.py`
 
 **Interfaces:**
 - Consumes: FASTA 文件中的 ENST/ENSPTRT 转录本 ID
@@ -179,10 +180,10 @@ def save_mapping(results, output_path):
             writer.writerow([tid, info["gene_id"], info["gene_name"]])
 
 if __name__ == "__main__":
-    project_root = "/saturn/zhaoty/evo_project/evolutionary_analysis"
+    project_root = "/saturn/zhaoty/evo_project"
 
     print("=== Human ENST → ENSG ===")
-    human_fasta = os.path.join(project_root, "../files/human_RBP_cdna.fasta")
+    human_fasta = os.path.join(project_root, "data/raw/human_RBP_cdna.fasta")
     human_ids = extract_transcript_ids(human_fasta)
     print(f"  Found {len(human_ids)} unique ENST IDs")
     human_results = batch_lookup(human_ids)
@@ -191,7 +192,7 @@ if __name__ == "__main__":
     print(f"  Saved {len(human_results)} mappings to {human_out}")
 
     print("\n=== Chimp ENSPTRT → ENSPTRG ===")
-    chimp_fasta = os.path.join(project_root, "../files/pan_troglodytes_RBP_cdna.fasta")
+    chimp_fasta = os.path.join(project_root, "data/raw/pan_troglodytes_RBP_cdna.fasta")
     chimp_ids = extract_transcript_ids(chimp_fasta)
     print(f"  Found {len(chimp_ids)} unique ENSPTRT IDs")
     chimp_results = batch_lookup(chimp_ids)
@@ -203,7 +204,7 @@ if __name__ == "__main__":
 - [ ] **Step 2: 运行下载并检查结果**
 
 ```bash
-cd /saturn/zhaoty/evo_project/evolutionary_analysis
+cd /saturn/zhaoty/evo_project/code/evolutionary
 python python/download_enst_mapping.py
 # 预期: ~62000 human + ~3558 chimp mappings
 wc -l data/enst_to_ensg.csv
@@ -215,9 +216,9 @@ head -5 data/enst_to_ensg.csv
 
 ```bash
 cd /saturn/zhaoty/evo_project
-git add evolutionary_analysis/python/download_enst_mapping.py \
-       evolutionary_analysis/data/enst_to_ensg.csv \
-       evolutionary_analysis/data/enstptr_to_ensptrg.csv
+git add code/evolutionary/python/download_enst_mapping.py \
+       data/enst_to_ensg.csv \
+       data/enstptr_to_ensptrg.csv
 git commit -m "feat: add Ensembl transcript-to-gene mapping download"
 ```
 
@@ -226,14 +227,14 @@ git commit -m "feat: add Ensembl transcript-to-gene mapping download"
 ### Task 2 (P1): 序列预处理与配对
 
 **Files:**
-- Create: `evolutionary_analysis/python/01_filter_and_pair.py`
+- Create: `code/evolutionary/python/01_filter_and_pair.py`
 
 **Interfaces:**
 - Consumes:
   - `config.yaml` — 所有参数
-  - `files/chimp_ortholog_mapping.txt` — 同源映射关系
-  - `files/human_RBP_cdna.fasta`, `files/human_RBP_protein.fasta`
-  - `files/pan_troglodytes_RBP_cdna.fasta`, `files/pan_troglodytes_RBP_protein.fasta`
+  - `data/raw/chimp_ortholog_mapping.txt` — 同源映射关系
+  - `data/raw/human_RBP_cdna.fasta`, `files/human_RBP_protein.fasta`
+  - `data/raw/pan_troglodytes_RBP_cdna.fasta`, `data/raw/pan_troglodytes_RBP_protein.fasta`
   - `data/enst_to_ensg.csv`, `data/enstptr_to_ensptrg.csv`
 - Produces:
   - `data/paired_sequences/{gene_symbol}_hsa_ptr.fa`
@@ -462,7 +463,7 @@ if __name__ == "__main__":
 - [ ] **Step 2: 运行配对脚本**
 
 ```bash
-cd /saturn/zhaoty/evo_project/evolutionary_analysis
+cd /saturn/zhaoty/evo_project/code/evolutionary
 python python/01_filter_and_pair.py
 # 预期: ~1300 one2one pairs, ~1100-1200 successfully paired after filtering
 wc -l data/results/filtering_stats.csv
@@ -474,9 +475,9 @@ head -10 data/results/filtering_stats.csv
 
 ```bash
 cd /saturn/zhaoty/evo_project
-git add evolutionary_analysis/python/01_filter_and_pair.py \
-       evolutionary_analysis/data/paired_sequences/ \
-       evolutionary_analysis/data/results/filtering_stats.csv
+git add code/evolutionary/python/01_filter_and_pair.py \
+       data/paired_sequences/ \
+       data/results/filtering_stats.csv
 git commit -m "feat(p1): sequence filtering and pairing for human-chimp RBP orthologs"
 ```
 
@@ -485,7 +486,7 @@ git commit -m "feat(p1): sequence filtering and pairing for human-chimp RBP orth
 ### Task 3 (P2): 序列比对
 
 **Files:**
-- Create: `evolutionary_analysis/python/02_run_alignment.py`
+- Create: `code/evolutionary/python/02_run_alignment.py`
 
 **Interfaces:**
 - Consumes: `data/paired_sequences/*.fa`
@@ -648,7 +649,7 @@ if __name__ == "__main__":
 - [ ] **Step 2: 运行比对**
 
 ```bash
-cd /saturn/zhaoty/evo_project/evolutionary_analysis
+cd /saturn/zhaoty/evo_project/code/evolutionary
 python python/02_run_alignment.py
 # 预期: ~90%+ success rate (closely related sequences)
 wc -l data/results/alignments_summary.csv
@@ -660,9 +661,9 @@ ls data/alignments/cdna/ | wc -l
 
 ```bash
 cd /saturn/zhaoty/evo_project
-git add evolutionary_analysis/python/02_run_alignment.py \
-       evolutionary_analysis/data/alignments/ \
-       evolutionary_analysis/data/results/alignments_summary.csv
+git add code/evolutionary/python/02_run_alignment.py \
+       data/alignments/ \
+       data/results/alignments_summary.csv
 git commit -m "feat(p2): MAFFT protein alignment and pal2nal codon back-translation"
 ```
 
@@ -671,7 +672,7 @@ git commit -m "feat(p2): MAFFT protein alignment and pal2nal codon back-translat
 ### Task 4 (P3): dN/dS 选择压力分析
 
 **Files:**
-- Create: `evolutionary_analysis/python/03_calculate_dnds.py`
+- Create: `code/evolutionary/python/03_calculate_dnds.py`
 
 **Interfaces:**
 - Consumes: `data/alignments/cdna/*.aln` (密码子比对，FASTA 格式)
@@ -972,7 +973,7 @@ if __name__ == "__main__":
 ```bash
 pip install scipy
 
-cd /saturn/zhaoty/evo_project/evolutionary_analysis
+cd /saturn/zhaoty/evo_project/code/evolutionary
 python python/03_calculate_dnds.py
 # 预期: ~1000+ successful dN/dS calculations
 wc -l data/results/dn_ds_results.csv
@@ -983,8 +984,8 @@ head -10 data/results/dn_ds_results.csv
 
 ```bash
 cd /saturn/zhaoty/evo_project
-git add evolutionary_analysis/python/03_calculate_dnds.py \
-       evolutionary_analysis/data/results/dn_ds_results.csv
+git add code/evolutionary/python/03_calculate_dnds.py \
+       data/results/dn_ds_results.csv
 git commit -m "feat(p3): pairwise dN/dS calculation with PAML codeml"
 ```
 
@@ -993,7 +994,7 @@ git commit -m "feat(p3): pairwise dN/dS calculation with PAML codeml"
 ### Task 5 (P4): 保守性打分
 
 **Files:**
-- Create: `evolutionary_analysis/python/04_compute_conservation.py`
+- Create: `code/evolutionary/python/04_compute_conservation.py`
 
 **Interfaces:**
 - Consumes: `data/alignments/protein/*.aln`, `data/results/dn_ds_results.csv`
@@ -1186,7 +1187,7 @@ if __name__ == "__main__":
 - [ ] **Step 2: 运行保守性打分**
 
 ```bash
-cd /saturn/zhaoty/evo_project/evolutionary_analysis
+cd /saturn/zhaoty/evo_project/code/evolutionary
 python python/04_compute_conservation.py
 # 预期: ~1000+ genes scored
 wc -l data/results/conservation_scores.csv
@@ -1197,9 +1198,9 @@ head -10 data/results/conservation_scores.csv
 
 ```bash
 cd /saturn/zhaoty/evo_project
-git add evolutionary_analysis/python/04_compute_conservation.py \
-       evolutionary_analysis/data/results/conservation_scores.csv \
-       evolutionary_analysis/data/results/sitewise_conservation/
+git add code/evolutionary/python/04_compute_conservation.py \
+       data/results/conservation_scores.csv \
+       data/results/sitewise_conservation/
 git commit -m "feat(p4): conservation scoring - identity, entropy, BLOSUM62, sliding window"
 ```
 
@@ -1208,7 +1209,7 @@ git commit -m "feat(p4): conservation scoring - identity, entropy, BLOSUM62, sli
 ### Task 6 (R1): 数据汇总统计
 
 **Files:**
-- Create: `evolutionary_analysis/r/01_import_summary.R`
+- Create: `code/evolutionary/r/01_import_summary.R`
 
 **Interfaces:**
 - Consumes: `data/results/filtering_stats.csv`, `data/results/alignments_summary.csv`, `data/results/dn_ds_results.csv`, `data/results/conservation_scores.csv`
@@ -1222,7 +1223,7 @@ git commit -m "feat(p4): conservation scoring - identity, entropy, BLOSUM62, sli
 
 library(tidyverse)
 
-setwd("/saturn/zhaoty/evo_project/evolutionary_analysis")
+setwd("/saturn/zhaoty/evo_project")
 
 # Read all result files
 filtering <- read_csv("data/results/filtering_stats.csv", show_col_types = FALSE)
@@ -1314,7 +1315,7 @@ cat("========================================\n")
 - [ ] **Step 2: 运行汇总**
 
 ```bash
-cd /saturn/zhaoty/evo_project/evolutionary_analysis
+cd /saturn/zhaoty/evo_project/code/evolutionary
 Rscript r/01_import_summary.R
 # 预期: 完整管道统计输出
 ```
@@ -1323,8 +1324,8 @@ Rscript r/01_import_summary.R
 
 ```bash
 cd /saturn/zhaoty/evo_project
-git add evolutionary_analysis/r/01_import_summary.R \
-       evolutionary_analysis/data/results/analysis_summary.csv
+git add code/evolutionary/r/01_import_summary.R \
+       data/results/analysis_summary.csv
 git commit -m "feat(r1): pipeline summary statistics and reporting"
 ```
 
@@ -1333,7 +1334,7 @@ git commit -m "feat(r1): pipeline summary statistics and reporting"
 ### Task 7 (R2): 保守性可视化
 
 **Files:**
-- Create: `evolutionary_analysis/r/02_visualize_conservation.R`
+- Create: `code/evolutionary/r/02_visualize_conservation.R`
 
 **Interfaces:**
 - Consumes: `data/results/dn_ds_results.csv`, `data/results/conservation_scores.csv`
@@ -1348,7 +1349,7 @@ git commit -m "feat(r1): pipeline summary statistics and reporting"
 
 library(tidyverse)
 
-setwd("/saturn/zhaoty/evo_project/evolutionary_analysis")
+setwd("/saturn/zhaoty/evo_project")
 fig_dir <- "figures"
 dir.create(fig_dir, showWarnings = FALSE, recursive = TRUE)
 
@@ -1485,7 +1486,7 @@ cat("  - selection_classification.pdf\n")
 - [ ] **Step 2: 运行可视化**
 
 ```bash
-cd /saturn/zhaoty/evo_project/evolutionary_analysis
+cd /saturn/zhaoty/evo_project/code/evolutionary
 Rscript r/02_visualize_conservation.R
 ls figures/*.pdf
 ```
@@ -1494,8 +1495,8 @@ ls figures/*.pdf
 
 ```bash
 cd /saturn/zhaoty/evo_project
-git add evolutionary_analysis/r/02_visualize_conservation.R \
-       evolutionary_analysis/figures/
+git add code/evolutionary/r/02_visualize_conservation.R \
+       results/evolutionary/figures/
 git commit -m "feat(r2): conservation and selection pressure visualization"
 ```
 
@@ -1504,7 +1505,7 @@ git commit -m "feat(r2): conservation and selection pressure visualization"
 ### Task 8 (R3): 扩展的富集分析
 
 **Files:**
-- Create: `evolutionary_analysis/r/03_enrichment_comparison.R`
+- Create: `code/evolutionary/r/03_enrichment_comparison.R`
 - Modify: 无需修改 `enrichment_chimp_100pct.R` — 通过 source() 复用其函数
 
 **Interfaces:**
@@ -1524,7 +1525,7 @@ library(KEGGREST)
 library(ggplot2)
 library(tidyverse)
 
-setwd("/saturn/zhaoty/evo_project/evolutionary_analysis")
+setwd("/saturn/zhaoty/evo_project")
 fig_dir <- "figures"
 
 # ---- Load analysis results ----
@@ -1682,7 +1683,7 @@ cat("\nEnrichment comparison complete.\n")
 - [ ] **Step 2: 运行富集分析**
 
 ```bash
-cd /saturn/zhaoty/evo_project/evolutionary_analysis
+cd /saturn/zhaoty/evo_project/code/evolutionary
 Rscript r/03_enrichment_comparison.R
 # 预期: 高保守基因和正选择基因的 GO 富集结果 + 图表
 ls figures/enrichment_*.pdf
@@ -1692,8 +1693,8 @@ ls figures/enrichment_*.pdf
 
 ```bash
 cd /saturn/zhaoty/evo_project
-git add evolutionary_analysis/r/03_enrichment_comparison.R \
-       evolutionary_analysis/figures/enrichment_*.pdf
+git add code/evolutionary/r/03_enrichment_comparison.R \
+       results/evolutionary/figures/enrichment_*.pdf
 git commit -m "feat(r3): GO enrichment for conserved and positively-selected RBP sets"
 ```
 
@@ -1702,8 +1703,8 @@ git commit -m "feat(r3): GO enrichment for conserved and positively-selected RBP
 ### Task 9 (R4): 整合报告（可选）
 
 **Files:**
-- Create: `evolutionary_analysis/r/04_render_report.R`
-- Create: `evolutionary_analysis/report/analysis_report.Rmd`
+- Create: `code/evolutionary/r/04_render_report.R`
+- Create: `results/evolutionary/report/analysis_report.Rmd`
 
 **Interfaces:**
 - Consumes: 所有 CSV + figures
@@ -1726,7 +1727,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 library(tidyverse)
-setwd("/saturn/zhaoty/evo_project/evolutionary_analysis")
+setwd("/saturn/zhaoty/evo_project")
 ```
 
 ## Pipeline Summary
@@ -1798,7 +1799,7 @@ data %>% filter(!is.na(p_val), p_val < 0.05) %>% arrange(desc(omega)) %>% head(1
 - [ ] **Step 2: 渲染报告**
 
 ```bash
-cd /saturn/zhaoty/evo_project/evolutionary_analysis
+cd /saturn/zhaoty/evo_project/code/evolutionary
 Rscript -e "rmarkdown::render('report/analysis_report.Rmd', output_file='analysis_report.html')"
 ```
 
@@ -1806,8 +1807,8 @@ Rscript -e "rmarkdown::render('report/analysis_report.Rmd', output_file='analysi
 
 ```bash
 cd /saturn/zhaoty/evo_project
-git add evolutionary_analysis/r/04_render_report.R \
-       evolutionary_analysis/report/
+git add code/evolutionary/r/04_render_report.R \
+       results/evolutionary/report/
 git commit -m "feat(r4): integrated R Markdown analysis report"
 ```
 
@@ -1847,7 +1848,7 @@ Task 9: R4 — 整合报告 (可选)
 
 快速启动（全部依次执行）：
 ```bash
-cd /saturn/zhaoty/evo_project/evolutionary_analysis
+cd /saturn/zhaoty/evo_project/code/evolutionary
 python python/01_filter_and_pair.py && \
 python python/02_run_alignment.py && \
 python python/03_calculate_dnds.py && \

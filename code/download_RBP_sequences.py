@@ -11,10 +11,10 @@ import sys
 import re
 
 # --- Config ---
-ENSG_FILE = "./files/RBP_geneid_list.txt"
-OUTPUT_CDNA = "./files/human_RBP_cdna.fasta"
-OUTPUT_PROTEIN = "./files/human_RBP_protein.fasta"
-OUTPUT_LOG = "./files/RBP_download_log.txt"
+ENSG_FILE = "./data/raw/RBP_geneid_list.txt"
+OUTPUT_CDNA = "./data/raw/human_RBP_cdna.fasta"
+OUTPUT_PROTEIN = "./data/raw/human_RBP_protein.fasta"
+OUTPUT_LOG = "./data/raw/RBP_download_log.txt"
 BATCH_SIZE = 50  # Ensembl max batch size
 RATE_LIMIT_SLEEP = 1.0  # seconds between batches (conservative)
 

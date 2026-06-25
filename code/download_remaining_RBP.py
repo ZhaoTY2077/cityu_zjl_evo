@@ -5,10 +5,10 @@ Small batches + conservative rate limiting for reliability.
 """
 import requests, re, time, sys, os
 
-ENSG_FILE = "./files/missing_cdna_ensg.txt"  # IDs needing cDNA
-EXISTING_CDNA = "./files/human_RBP_cdna.fasta"
-EXISTING_PROTEIN = "./files/human_RBP_protein.fasta"
-LOG_FILE = "./files/RBP_download_log.txt"
+ENSG_FILE = "./data/raw/missing_cdna_ensg.txt"  # IDs needing cDNA
+EXISTING_CDNA = "./data/raw/human_RBP_cdna.fasta"
+EXISTING_PROTEIN = "./data/raw/human_RBP_protein.fasta"
+LOG_FILE = "./data/raw/RBP_download_log.txt"
 
 BATCH_SIZE = 10        # small batches to avoid timeouts
 MAX_RETRIES = 5
@@ -94,7 +94,7 @@ def main():
     print(f"\nENSG IDs to download: {len(ensg_ids)}")
 
     # Also read IDs needing protein
-    prot_file = "./files/missing_prot_ensg.txt"
+    prot_file = "./data/raw/missing_prot_ensg.txt"
     needs_protein = set(read_ensg_ids(prot_file))
     needs_cdna = set(ensg_ids)
 

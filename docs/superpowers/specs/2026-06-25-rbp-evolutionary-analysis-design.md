@@ -48,27 +48,36 @@
 
 ```
 evo_project/
-├── evolutionary_analysis/
-│   ├── config.yaml                    # 物种、路径、参数 — 唯一配置入口
-│   ├── python/
-│   │   ├── 01_filter_and_pair.py
-│   │   ├── 02_run_alignment.py
-│   │   ├── 03_calculate_dnds.py
-│   │   └── 04_compute_conservation.py
-│   ├── r/
-│   │   ├── 01_import_summary.R
-│   │   ├── 02_visualize_conservation.R
-│   │   ├── 03_enrichment_comparison.R
-│   │   └── 04_render_report.R
-│   ├── data/
-│   │   ├── paired_sequences/
-│   │   ├── alignments/
-│   │   └── results/
-│   ├── figures/
-│   └── report/
-├── files/                              # 现有数据 (不变)
-├── enrichment_results/                 # 现有结果 (不变)
-└── enrichment_chimp_results/           # 现有结果 (不变)
+├── code/
+│   ├── enrichment_analysis.R            # 现有 R 富集分析脚本
+│   ├── enrichment_chimp_100pct.R        # 现有 R 黑猩猩富集分析脚本
+│   ├── download_RBP_sequences.py        # 现有 Ensembl 序列下载脚本
+│   ├── check_rbp_completeness.py
+│   ├── download_missing_RBP.py
+│   ├── download_remaining_RBP.py
+│   └── evolutionary/                    # 进化分析管道代码
+│       ├── config.yaml                  # 物种、路径、参数 — 唯一配置入口
+│       ├── bin/                         # 外部工具脚本 (pal2nal 等)
+│       ├── python/
+│       │   ├── 01_filter_and_pair.py
+│       │   ├── 02_run_alignment.py
+│       │   ├── 03_calculate_dnds.py
+│       │   └── 04_compute_conservation.py
+│       └── r/
+│           ├── 01_import_summary.R
+│           ├── 02_visualize_conservation.R
+│           ├── 03_enrichment_comparison.R
+│           └── 04_render_report.R
+├── data/
+│   └── raw/                             # 原始下载数据 (FASTA, 同源映射表)
+├── results/
+│   ├── enrichment_analysis/             # 51 基因富集分析结果
+│   └── enrichment_chimp_100pct/         # 391 基因 100% 保守 RBP 富集结果
+├── docs/
+│   └── superpowers/
+│       ├── specs/                       # 设计规格文档
+│       └── plans/                       # 实施计划文档
+└── README.md
 ```
 
 ## Python 层模块设计
@@ -188,9 +197,9 @@ species:
   targets:
     - code: "ptr"
       name: "Pan troglodytes"
-      cdna: "../files/pan_troglodytes_RBP_cdna.fasta"
-      protein: "../files/pan_troglodytes_RBP_protein.fasta"
-      ortholog_map: "../files/chimp_ortholog_mapping.txt"
+      cdna: "../data/raw/pan_troglodytes_RBP_cdna.fasta"
+      protein: "../data/raw/pan_troglodytes_RBP_protein.fasta"
+      ortholog_map: "../data/raw/chimp_ortholog_mapping.txt"
   # 未来扩展:
   # - code: "ggo"
   #   name: "Gorilla gorilla"

@@ -9,9 +9,9 @@ import re
 import sys
 import os
 
-ENSG_FILE = "./files/RBP_geneid_list.txt"
-CDNA_FASTA = "./files/human_RBP_cdna.fasta"
-PROTEIN_FASTA = "./files/human_RBP_protein.fasta"
+ENSG_FILE = "./data/raw/RBP_geneid_list.txt"
+CDNA_FASTA = "./data/raw/human_RBP_cdna.fasta"
+PROTEIN_FASTA = "./data/raw/human_RBP_protein.fasta"
 BATCH_SIZE = 50
 API_TIMEOUT = 120
 

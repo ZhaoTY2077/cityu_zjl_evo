@@ -189,7 +189,7 @@ if (!is.null(hsa_pathways)) {
 }
 
 # ---- 6. Save full results ---------------------------------------------------
-outdir <- "/saturn/zhaoty/evo_project/enrichment_results"
+outdir <- "/saturn/zhaoty/evo_project/results/enrichment_analysis"
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
 save(go_bp, go_mf, go_cc, sig_bp, sig_mf, sig_cc,
